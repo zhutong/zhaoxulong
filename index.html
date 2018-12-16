@@ -1,0 +1,275 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+    <meta charset="UTF-8">
+    <title>PathFinder</title>
+    <link rel="stylesheet" href="/static/css/element.css">
+    <link rel="stylesheet" href="/static/mermaid/mermaid.css">
+    <style>
+        .mermaid {
+            background: #141414;
+            border-radius: 4px;
+            margin-bottom: 10px;
+        }
+
+        .edgePath .BestLink {
+            stroke: #13ce66;
+            stroke-width: 16px;
+            opacity: 0.8;
+        }
+
+        .edgePath .secondBestLink {
+            stroke: #f7ba2a;
+            stroke-width: 16px;
+            opacity: 0.8;
+        }
+
+        .edgePath .thirdBestLink {
+            stroke: red;
+            stroke-width: 16px;
+            opacity: 0.8;
+        }
+
+        .el-form-item {
+            margin-bottom: 5px;
+        }
+
+        .costLabel1 {
+            background: #141414;
+            color: white;
+        }
+
+        .costLabel0 {
+            background: #141414;
+            color: grey;
+        }
+
+        .el-input--small,
+        .el-input {
+            width: 200px;
+        }
+
+        .el-textarea__inner {
+            position: fixed;
+            top: 150px;
+            bottom: 10px;
+            width: 280px;
+        }
+
+        .desc {
+            cursor: pointer;
+            font-weight: bold;
+            font-size: 0.9em;
+        }
+
+        .left-pane {
+            position: absolute;
+            left: 10px;
+            top: 10px;
+            right: 300px;
+        }
+
+        .right-pane {
+            position: absolute;
+            width: 300px;
+            right: -10px;
+        }
+
+        .el-row {
+            margin-bottom: 5px;
+        }
+    </style>
+</head>
+
+<body>
+    <div id="app" v-cloak>
+        <div class="right-pane">
+            <el-form :inline="true" class="demo-form-inline" label-width="80px">
+                <el-form-item label="源节点">
+                    <el-select v-model="srcNode" filterable size="small">
+                        <el-option v-for="n in routers" :label="n" :value="n"></el-option>
+                    </el-select>
+                </el-form-item>
+                <el-form-item label="目的节点">
+                    <el-select v-model="dstNode" filterable size="small">
+                        <el-option v-for="n in routers" :label="n" :value="n"></el-option>
+                    </el-select>
+                </el-form-item>
+                <el-form-item>
+                    <el-button type="primary" size="small" style="margin-right:47px;" @click="getPath">
+                        计算路径
+                    </el-button>
+                    <el-button type="default" size="small" @click="exchange">
+                        交换节点
+                    </el-button>
+                    <el-button type="success" size="small" @click="update">
+                        更新拓扑
+                    </el-button>
+                </el-form-item>
+            </el-form>
+            <el-input type="textarea" v-model="linkText" :rows="20"></el-input>
+        </div>
+        <div class="left-pane">
+            <div class="mermaid">
+                <svg id="id1" xmlns="http://www.w3.org/2000/svg" height="100%" viewbox="0 0 1500 800" style="max-width:1000px;">
+                    <g class="output">
+                        <g class="edgePaths">
+                            <g class="edgePath" v-for="(l, i) in links" :key="i" style="opacity: 1;">
+                                <path class="path" :d="path(l)"></path>
+                            </g>
+                            <g class="edgePath" v-for="(l, i) in hlLinks" :key="i" style="opacity: 1;">
+                                <path class="path BestLink" :d="l"></path>
+                            </g>
+                        </g>
+                        <g class="edgeLabels">
+                            <g class="edgeLabel" v-for="(l, i) in links" :key="i" :transform="transLabel(l)" style="opacity: 1;">
+                                <g transform="translate(-10,-10)" class="label">
+                                    <foreignobject width="20" height="20">
+                                        <div xmlns="http://www.w3.org/1999/xhtml" style="display: inline-block; white-space: nowrap;">
+                                            <span :class="l.igp_metric==100?'costLabel0':'costLabel1'">{{l.igp_metric}}
+                                            </span>
+                                        </div>
+                                    </foreignobject>
+                                </g>
+                            </g>
+                        </g>
+                        <g class="nodes">
+                            <g class="node" v-for="(n, i) in routers" :key="i" id="n" :transform="transNode(n)" style="opacity: 1;">
+                                <circle x="-22" y="-21" r="22"></circle>
+                                <g class="label" transform="translate(0,0)">
+                                    <g transform="translate(-12,-11)">
+                                        <foreignobject width="24" height="22">
+                                            <div xmlns="http://www.w3.org/1999/xhtml" style="display: inline-block; white-space: nowrap;">{{n}}</div>
+                                        </foreignobject>
+                                    </g>
+                                </g>
+                            </g>
+                        </g>
+                    </g>
+                </svg>
+            </div>
+            <div>
+                <el-row v-for="(p, i) in paths">
+                    <el-col :span="1" :offset="2">
+                        <span class="desc" @click="refreshHLPath(i)">
+                            {{i+1}}
+                        </span>
+                    </el-col>
+                    <el-col class="desc" :span="2">
+                        <span @click="refreshHLPath(i)">$ {{p[0]}}</span>
+                    </el-col>
+                    <el-col :span="19">
+                        <el-tag v-for="n in p[1]" type="success" style="margin-right: 10px;">{{n}}</el-tag>
+                    </el-col>
+                </el-row>
+            </div>
+        </div>
+    </div>
+</body>
+<script src="/static/js/axios.min.js"></script>
+<script src="/static/js/jQuery-2.1.3.min.js"></script>
+<script src="/static/js/vue.js"></script>
+<script src="/static/js/element.js"></script>
+<script>
+    var svg;
+    var app = new Vue({
+        el: '#app',
+        data: {
+            linkText: '',
+            chartId: 1,
+            srcNode: 'SZ',
+            dstNode: 'DE',
+            spfPath: [],
+            routers: {},
+            links: [],
+            location: {},
+            paths: [],
+            hlLinks: [],
+            showPath: 1
+        },
+        mounted: function () {
+            this.getData();
+        },
+        methods: {
+            transNode: function (n) {
+                return 'translate(' + this.location[n][0] +
+                    ',' + this.location[n][1] + ')';
+            },
+            transLabel: function (l) {
+                var x0 = this.location[l.routers[0]][0],
+                    y0 = this.location[l.routers[0]][1],
+                    x1 = this.location[l.routers[1]][0],
+                    y1 = this.location[l.routers[1]][1];
+                return 'translate(' + (x0 + x1) / 2 + ',' + (y0 + y1) / 2 + ')';
+            },
+            pathFromNode: function (n0, n1) {
+                var x0 = this.location[n0][0],
+                    y0 = this.location[n0][1],
+                    x1 = this.location[n1][0],
+                    y1 = this.location[n1][1];
+                return 'M' + x0 + ',' + y0 + 'L' + x1 + ',' + y1;
+            },
+            path: function (l) {
+                return this.pathFromNode(l.routers[0], l.routers[1]);
+            },
+            exchange: function () {
+                s = this.srcNode;
+                this.srcNode = this.dstNode;
+                this.dstNode = s;
+            },
+            getData: function () {
+                axios.get('api/data/link')
+                    .then(function (r) {
+                        app.linkText = r.data.link;
+                        app.location = r.data.location;
+                        app.routers = r.data.topo.routers;
+                        app.links = r.data.topo.links;
+                    })
+                    .catch(function (error) {
+                        console.error(error);
+                    });
+            },
+            update: function () {
+                this.paths = [];
+                this.hlLinks = [];
+                axios.post('api/data/link', {
+                        link: this.linkText,
+                    })
+                    .then(function (r) {
+                        app.routers = r.data.topo.routers;
+                        app.links = r.data.topo.links;
+                    })
+                    .catch(function (error) {
+                        console.error(error);
+                    });
+            },
+            refreshHLPath: function (i) {
+                var i,
+                    p = this.paths[i][1],
+                    hlLinks = [];
+                for (i = 0; i < p.length - 1; i++) {
+                    hlLinks.push(app.pathFromNode(p[i], p[i + 1]));
+                }
+                this.hlLinks = hlLinks;
+            },
+            getPath: function () {
+                this.paths = [];
+                this.hlLinks = [];
+                axios.post('api/data/path', {
+                        src: this.srcNode,
+                        dst: this.dstNode,
+                    })
+                    .then(function (r) {
+                        app.paths = r.data.path;
+                        app.refreshHLPath(0);
+                    })
+                    .catch(function (error) {
+                        console.error(error);
+                    });
+            }
+        }
+    });
+</script>
+
+</html>

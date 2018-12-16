@@ -1,0 +1,72 @@
+.mermaid svg {
+    margin: auto;
+    display: block;
+    background-color: #141414;
+}
+
+.node rect,
+.node circle,
+.node ellipse,
+.node polygon {
+    cursor: pointer;
+    fill: #3c8dbc;
+    /* fill: green; */
+    stroke: white;
+    stroke-width: 1px;
+}
+
+.node ellipse {
+    fill: red;
+}
+
+.node polygon {
+    fill: #f39c12;
+}
+
+.node circle {
+    /* fill: green; */
+}
+
+g.label div {
+    color: white;
+    text-align: center;
+    cursor: pointer;
+}
+
+.edgePath path {
+    fill: white;
+    /* stroke: #00c0ef; */
+    stroke: #f39c12;
+    stroke-width: 2px;
+}
+
+.edgeLabel {
+    background-color: black !important;
+    color: #ccc !important;
+}
+
+.cluster rect {
+    fill: #292929 !important;
+    rx: 6 !important;
+    stroke: #555 !important;
+    stroke-width: 1px !important;
+}
+
+.cluster text {
+    fill: gold;
+    font-size: 16px;
+}
+
+div.mermaidTooltip {
+    position: absolute;
+    text-align: center;
+    max-width: 400px;
+    padding: 2px 8px;
+    font-size: 13px;
+    color: black;
+    background: white;
+    border: 1px solid grey;
+    border-radius: 4px;
+    pointer-events: none;
+    z-index: 100;
+}
